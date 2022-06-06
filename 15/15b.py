@@ -1,42 +1,55 @@
-from collections import deque
 import time
 import math
-import bisect
+from heapq import heapify, heappop, heappush
 fn = 'input.txt'
 with open(fn) as fl:
     all_lines = fl.read().splitlines()
 
 aaa = time.perf_counter()
-
-grid = {}
-best = {}
-prevmap = {}
-for y, line in enumerate(all_lines):
-    for x, char in enumerate(line):
-        grid[(y,x)] = int(char)
-        best[(y,x)] = math.inf
-        prevmap[(y,x)] = None
-
 y_len = len(all_lines)
 x_len = len(all_lines[0])
+grid = {}
+best = {}
+# prevmap = {}
+for y, line in enumerate(all_lines):
+    for x, char in enumerate(line):
+        risk = int(char)
+        for j in range(5):
+            for k in range(5):
+                zooz = j+k
+                grid[(y + (j*y_len), x + (k*x_len))] = ((risk + zooz - 1) % 9) + 1
+
+best = {(y,x): math.inf for y,x in grid.keys()}
+# prevmap = {(y,x): None for y,x in grid.keys()}
 
 start = (0,0)
-end = (y_len-1, x_len-1)
+end = (y_len*5-1, x_len*5-1)
 
 def in_bounds(pair):
     y, x = pair
-    if 0 <= y < y_len and 0 <= x < x_len:
+    if 0 <= y < y_len*5 and 0 <= x < x_len*5:
         return True
     return False
 
-unvisited = deque([[elem, math.inf] for elem in grid.keys()])
-unvisited[0] = [start, 0]
+unvisited = [(math.inf, elem) for elem in grid.keys()]
+unvisited[0] = (0, start)
+heapify(unvisited)
 best[start] = 0
 visited = set()
 
+for aa in range(y_len*5):
+    shi = ''
+    for bb in range(x_len*5):
+        shi += str(grid[(aa,bb)])
+    # print(shi)
+
 while len(unvisited):
 
-    cpair, cscore = unvisited[0]
+    if len(unvisited) % 100 == 0:
+        print(len(unvisited), '/', len(grid))
+
+    cscore, cpair = heappop(unvisited)
+
     y, x = cpair
 
     for n in [(y+1,x),(y,x+1),(y,x-1),(y-1,x)]:
@@ -45,11 +58,9 @@ while len(unvisited):
 
         n_score = best[n]
         if cscore + grid[n] < n_score:
-            i = unvisited.index([n, n_score])
-            del unvisited[i]
+            unvisited.remove((n_score, n))
             best[n] = cscore + grid[n]
-            prevmap[n] = cpair
-            bisect.insort(unvisited, [n, best[n]])
+            heappush(unvisited, (best[n], n))
 
     del unvisited[0]
     visited.add(cpair)
